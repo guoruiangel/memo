@@ -237,7 +237,7 @@ def api_send():
     content = data.get('content', '').strip()
     if not content:
         return jsonify({'error': 'empty'}), 400
-    # Memo只允许郭锐和Pablo对话
+    # Memo只允许创建者和Pablo对话
     if sender not in ('guorui', 'pablo'):
         return jsonify({'error': 'forbidden sender'}), 403
 
@@ -315,7 +315,7 @@ def _wake_agent(content):
         short = content[:300]
         log(f"waking agent: {short[:40]}...")
         result = _agent_cmd(
-            f'[Memo] 郭锐在pablo聊天页发了消息：{short}。去 http://127.0.0.1:5003/api/latest 获取完整消息处理。处理完回复后执行3.7.15检查：先设3分钟后的cron检查Memo，如果没新消息则7分钟，还没则15分钟，依然没有就结束。（使用openclaw cron add设置一次性定时检查）',
+            f'[Memo] 用户发了新消息：{short}'
             180
         )
         ok = result.returncode == 0
