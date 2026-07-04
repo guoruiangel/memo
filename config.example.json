@@ -1,0 +1,31 @@
+{
+  "//": "LinkClaw v2 统一配置",
+  "role": "kk",
+  "port": 3000,
+  "peer_url": "http://192.168.1.11:5003",
+  "secret_token": "kk-chat-v2-secret",
+  "group_db_is_separate": true,
+  "sync_to_dashboard": false,
+  "dashboard_url": "",
+  "call_agent": {
+    "enabled": true,
+    "agent_name": "kk",
+    "model": "deepseek/deepseek-v4-flash",
+    "timeout": 120
+  },
+  "feishu_notify": {
+    "enabled": true,
+    "app_id": "cli_a93cd6d81f38dbc7",
+    "user_open_id": "ou_b04ec64d36344c5b358071b6b2174815"
+  },
+  "proxy_routes": {
+    "kk_proxy": {
+      "enabled": true,
+      "target": "http://127.0.0.1:5001"
+    },
+    "wiki_proxy": {
+      "enabled": true,
+      "target": "http://127.0.0.1:5010"
+    }
+  }
+}

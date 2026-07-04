@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Memo</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;height:100vh;overflow:hidden;font-size:14px}
+#app{display:flex;height:100vh}
+/* 左侧对话 */
+#chatPanel{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh}
+/* 右侧任务 */
+#taskPanel{width:360px;min-width:320px;border-left:1px solid #e0e0e0;background:#fff;display:flex;flex-direction:column;overflow:hidden}
+
+/* header */
+.header{padding:10px 16px;background:#fff;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.header h1{font-size:16px;font-weight:600;color:#1a1a2e}
+.header .badge{font-size:11px;background:#667eea;color:#fff;padding:2px 8px;border-radius:10px}
+.header .score-badge{background:#f59e0b}
+.header .right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.header .right span{cursor:pointer;color:#667eea;font-size:13px}
+
+/* 日期侧栏 */
+#dateSidebar{width:80px;min-width:80px;background:#fff;border-right:1px solid #e8e8e8;overflow-y:auto;padding:8px 4px;flex-shrink:0}
+#dateSidebar .dg{padding:4px 6px;border-radius:6px;cursor:pointer;font-size:11px;margin-bottom:2px;color:#555;text-align:center;line-height:1.3}
+#dateSidebar .dg:hover{background:#f0f2ff}
+#dateSidebar .dg.active{background:#667eea;color:#fff}
+#dateSidebar .dg .count{font-size:10px;opacity:0.6}
+
+/* message area */
+#messageArea{flex:1;overflow-y:auto;padding:12px 16px;background:#f8f9fb}
+.date-divider{text-align:center;font-size:11px;color:#999;margin:12px 0 8px;position:relative}
+.date-divider:before,.date-divider:after{content:'';position:absolute;top:50%;width:30%;height:1px;background:#e0e0e0}
+.date-divider:before{left:0}
+.date-divider:after{right:0}
+.date-divider span{background:#f8f9fb;padding:0 8px;position:relative;z-index:1}
+.msg{padding:8px 12px;margin-bottom:6px;border-radius:10px;max-width:60%;line-height:1.5;font-size:13px;position:relative}
+.msg.guorui{background:#e6f3ff;margin-left:auto;border-bottom-right-radius:4px}
+.msg.pablo{background:#dcfce7;margin-right:auto;border-bottom-left-radius:4px}
+.msg .sender{font-size:11px;font-weight:600;margin-bottom:2px;opacity:0.7}
+.msg .time{font-size:10px;opacity:0.5;margin-top:2px}
+.msg .reply-ref{font-size:11px;color:#667eea;cursor:pointer;display:inline;background:rgba(102,126,234,0.1);padding:1px 4px;border-radius:4px;margin-right:2px}
+
+.msg .quote-bar{font-size:11px;color:#667eea;background:rgba(102,126,234,0.08);padding:2px 6px;border-radius:4px;margin-bottom:4px;border-left:2px solid #667eea}
+.msg .blockquote{font-size:12px;color:#555;background:#f5f5f5;padding:4px 8px;border-radius:4px;border-left:3px solid #667eea;margin:4px 0;line-height:1.4;white-space:pre-wrap;word-break:break-all}
+
+/* input */
+#inputArea{background:#fff;border-top:1px solid #e8e8e8;padding:8px 12px;flex-shrink:0}
+#inputArea .row{display:flex;gap:8px;align-items:flex-end}
+#inputArea textarea{flex:1;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;resize:none;min-height:42px;max-height:150px;outline:none;font-family:inherit;line-height:1.4}
+#inputArea textarea:focus{border-color:#667eea}
+#inputArea .send-btn{padding:8px 18px;background:#667eea;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;flex-shrink:0}
+#inputArea .send-btn:active{opacity:0.8}
+#inputArea .hint{font-size:11px;color:#999;margin-top:4px;display:flex;gap:8px;align-items:center}
+#inputArea .hint .id-btn{padding:3px 10px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:11px;background:transparent;color:#666}
+#inputArea .hint .id-btn.active{background:#667eea;color:#fff;border-color:#667eea}
+
+.qlink{font-size:11px;color:#667eea;cursor:pointer;display:inline-block;margin:-2px 0 4px;padding:2px 0}
+.qlink:hover{text-decoration:underline}
+.qlink-right{float:right}
+.qlink-left{float:left}
+
+/* quote bar */
+#quoteBar{background:#f0f2ff;padding:4px 12px;font-size:12px;color:#555;display:none;border-top:1px solid #ddd}
+#quoteBar.show{display:flex;align-items:center;gap:6px}
+#quoteBar .close{color:#999;cursor:pointer;font-size:16px;line-height:1;margin-left:auto}
+
+/* task panel */
+.task-header{padding:10px 16px;background:#fff;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.task-header h2{font-size:15px;font-weight:600;color:#1a1a2e}
+.task-header .total{font-size:12px;background:#f59e0b;color:#fff;padding:2px 8px;border-radius:10px}
+.task-header .filter{display:flex;gap:4px;margin-left:auto}
+.task-header .filter button{padding:3px 8px;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:11px;background:transparent;color:#666}
+.task-header .filter button.active{background:#667eea;color:#fff;border-color:#667eea}
+
+#taskList{flex:1;overflow-y:auto;padding:10px 12px}
+.task-card{border:1px solid #eee;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;line-height:1.4;cursor:pointer}
+.task-card:active{background:#f8f9ff}
+.task-card .t-title{font-weight:500;color:#333;margin-bottom:2px;display:flex;gap:6px;align-items:flex-start}
+.task-card .t-title .tid{color:#667eea;font-weight:600;flex-shrink:0}
+.task-card .t-info{font-size:11px;color:#888;display:flex;gap:8px;align-items:center}
+.task-card .t-status{font-size:10px;padding:1px 6px;border-radius:6px}
+.task-card .t-status.pending{background:#fef3c7;color:#92400e}
+.task-card .t-status.scored{background:#d1fae5;color:#065f46}
+.task-card .t-status.completed{background:#e0e7ff;color:#3730a3}
+.task-card .t-actions{display:flex;gap:4px;margin-top:4px;justify-content:flex-end}
+.task-card .t-actions button{padding:2px 8px;border:1px solid #ddd;border-radius:6px;font-size:11px;cursor:pointer;background:transparent}
+.task-card .t-actions button.score-btn{background:#f59e0b;color:#fff;border-color:#f59e0b}
+.task-card .t-actions button.done-btn{background:#22c55e;color:#fff;border-color:#22c55e}
+.task-card .t-actions button.archive-btn{color:#888}
+.task-card .t-actions button.delete-btn{color:#e53e3e}
+.task-card .t-score{font-weight:600;color:#f59e0b}
+.task-card .t-feedback{color:#666;font-style:italic;margin-top:2px;font-size:11px}
+
+/* score panel */
+#scorePanel{display:none;padding:10px 12px;border-top:1px solid #e8e8e8;background:#fff8f0;flex-shrink:0}
+#scorePanel.show{display:block}
+#scorePanel label{font-size:12px;color:#555;display:block;margin-bottom:4px}
+#scorePanel input,#scorePanel textarea{width:100%;border:1px solid #ddd;border-radius:6px;padding:6px 8px;font-size:12px;margin-bottom:6px;outline:none}
+#scorePanel input:focus,#scorePanel textarea:focus{border-color:#667eea}
+#scorePanel .score-actions{display:flex;gap:6px}
+#scorePanel .score-actions button{padding:5px 14px;border:none;border-radius:6px;font-size:12px;cursor:pointer}
+#scorePanel .score-actions .confirm{background:#f59e0b;color:#fff}
+#scorePanel .score-actions .cancel{background:#e5e7eb;color:#555}
+
+/* mobile */
+@media(max-width:768px){
+  #taskPanel{display:none;position:fixed;right:0;top:0;height:100vh;z-index:100;width:90vw}
+  #taskPanel.show-mobile{display:flex}
+  #chatPanel.hide-mobile{display:none}
+  .mobile-toggle{display:flex!important}
+}
+.mobile-toggle{display:none;position:fixed;bottom:70px;right:16px;z-index:99;background:#667eea;color:#fff;border:none;border-radius:24px;padding:10px 16px;font-size:13px;box-shadow:0 4px 12px rgba(102,126,234,0.4);cursor:pointer}
+
+/* empty */
+.empty{text-align:center;color:#aaa;padding:40px 20px;font-size:13px}
+.empty span{display:block;font-size:11px;margin-top:4px;color:#ccc}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 日期侧栏 -->
+  <div id="dateSidebar"></div>
+  <!-- 左侧对话 -->
+  <div id="chatPanel">
+    <div class="header">
+      <h1>Memo</h1>
+      <span class="badge" id="totalBadge">0</span>
+      <span class="badge score-badge" id="scoreBadge">0</span>
+      <div class="right">
+        <span onclick="togglePanel()">📋 任务</span>
+      </div>
+    </div>
+    <div id="quoteBar" onclick="clearQuote()"><span id="quoteText"></span><span class="close">✕</span></div>
+    <div id="messageArea"><div class="empty">加载中...</div></div>
+    <div id="inputArea">
+      <div class="row">
+        <textarea id="inputMsg" rows="1" placeholder="输入消息...（双击回车发送）"></textarea>
+        <button class="send-btn" onclick="sendMsg()">发送</button>
+      </div>
+      <div class="hint">
+        <button class="id-btn active" data-id="gr" onclick="setIdentity('gr')">🔴 郭锐</button>
+        <button class="id-btn" data-id="pablo" onclick="setIdentity('pablo')">🔵 Pablo</button>
+        <span style="margin-left:auto;color:#aaa">⏎⏎ 发送 · Shift⏎ 换行</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右侧任务 -->
+  <div id="taskPanel">
+    <div class="task-header">
+      <h2>📋 任务</h2>
+      <span class="total" id="taskTotalScore">0</span>
+      <div class="filter">
+        <button class="active" data-filter="all" onclick="setFilter('all')">全部</button>
+        <button data-filter="pending" onclick="setFilter('pending')">待办</button>
+        <button data-filter="scored" onclick="setFilter('scored')">已评</button>
+        <button data-filter="archived" onclick="setFilter('archived')">归档</button>
+      </div>
+    </div>
+    <div id="taskList" style="padding:8px 10px"></div>
+    <div id="scorePanel">
+      <label>分数</label>
+      <input id="scoreInput" type="number" step="1" value="0" placeholder="+-分">
+      <label>备注</label>
+      <textarea id="reasonInput" rows="2" placeholder="打分原因..."></textarea>
+      <div class="score-actions">
+        <button class="confirm" onclick="submitScore()">✅ 打分</button>
+        <button class="cancel" onclick="closeScore()">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="mobile-toggle" id="mobileToggle" onclick="togglePanel()" style="display:none">📋 任务</button>
+
+<script>
+// ===== STATE =====
+var identity = 'gr';
+var lastId = 0;
+var allMessages = [];
+var tasks = [];
+var tasksArchived = [];
+var totalScore = 0;
+var taskFilter = 'all';
+var scoreTaskId = null;
+var quoteMsgId = -1;
+
+// ===== UTILS =====
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmtTime(ts){var d=new Date(ts*1000);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function now(){return Math.floor(Date.now()/1000)}
+
+// ===== IDENTITY =====
+function setIdentity(id){
+  identity=id;
+  document.querySelectorAll('.id-btn').forEach(function(el){el.classList.toggle('active',el.dataset.id===id)});
+  document.getElementById('inputMsg').focus();
+}
+
+// ===== QUOTE =====
+// 用事件委托监听引用按钮
+function clearQuote(){quoteMsgId=-1;document.getElementById('quoteBar').style.display='none'}
+
+// ===== SEND =====
+// 引用函数
+function doQuote(id){
+  quoteMsgId=id;
+  var fullText='';
+  if(allMessages){
+    for(var qi=0;qi<allMessages.length;qi++){
+      if(allMessages[qi].id===id){fullText=allMessages[qi].content;break;}
+    }
+  }
+  var inp=document.getElementById('inputMsg');
+  var line='> #'+id+' '+fullText+'\n';
+  inp.value=line+inp.value;
+  inp.focus();
+  inp.style.height='auto';
+  inp.style.height=inp.scrollHeight+'px';
+}
+
+function sendMsg(){
+  var input=document.getElementById('inputMsg');
+  var text=input.value.trim();
+  if(!text)return;
+  var sender=identity==='gr'?'guorui':'pablo';
+  var body={sender:sender,content:text};
+  if(quoteMsgId>0)body.reply_to=quoteMsgId;
+  fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.status==='ok'){input.value='';input.style.height='auto';clearQuote();pollMessages(true)}
+    });
+}
+
+// ===== MESSAGES =====
+function getMonthLabel(d){var m=String(d.getMonth()+1).padStart(2,'0')+'月';var day=d.getDate();if(day<=10)return m+'上旬';if(day<=20)return m+'中旬';return m+'下旬'}
+
+function renderDateSidebar(){
+  var groups={},order=[];
+  for(var i=0;i<allMessages.length;i++){
+    var m=allMessages[i];var d=new Date(m.created_at*1000);var lbl=getMonthLabel(d);
+    if(!groups[lbl]){groups[lbl]={label:lbl,count:0,ts:d.getTime()};order.push(lbl)}
+    groups[lbl].count++
+  }
+  var sidebar=document.getElementById('dateSidebar');
+  if(!order.length){sidebar.innerHTML='';return}
+  sidebar.innerHTML='';
+  for(var gi=0;gi<order.length;gi++){
+    var g=groups[order[gi]];
+    sidebar.insertAdjacentHTML('beforeend',
+      '<div class="dg'+(activeDateGroup===g.label?' active':'')+'" onclick="filterByDate(\''+g.label+'\')">'+
+        g.label+'<br><span class="count">'+g.count+'条</span></div>'
+    )
+  }
+}
+
+var activeDateGroup=null;
+
+function filterByDate(label){
+  if(activeDateGroup===label)activeDateGroup=null;
+  else activeDateGroup=label;
+  renderMessages()
+}
+
+function renderMessages(){
+  var el=document.getElementById('messageArea');
+  if(!allMessages.length){el.innerHTML='<div class="empty">暂无对话<br><span>郭锐发消息会自动创建任务</span></div>';renderDateSidebar();return}
+  
+  // 按旬分组
+  var groups={},order=[];
+  for(var i=0;i<allMessages.length;i++){
+    var m=allMessages[i];var d=new Date(m.created_at*1000);var lbl=getMonthLabel(d);
+    if(!groups[lbl]){groups[lbl]={label:lbl,msgs:[]};order.push(lbl)}
+    groups[lbl].msgs.push(m)
+  }
+  
+  el.innerHTML='';
+  for(var gi=0;gi<order.length;gi++){
+    var lbl=order[gi];
+    if(activeDateGroup&&lbl!==activeDateGroup)continue;
+    el.insertAdjacentHTML('beforeend','<div class="date-divider"><span>'+lbl+'</span></div>');
+    var msgs=groups[lbl].msgs;
+    for(var mi=0;mi<msgs.length;mi++){
+      var m=msgs[mi];
+      var isGR=m.sender==='guorui';
+      var content=esc(m.content);
+      // 把>开头的引用行变成blockquote样式
+      content=content.replace(/^> .+/gm,function(m){return '<div class="blockquote">'+m.replace(/^> /,'')+'</div>'});
+      content=content.replace(/#(\d+)/g,'<span class="reply-ref" onclick="event.stopPropagation();scrollTask(parseInt($1))">#$1</span>');
+      var readMark=(isGR&&m.read)?' <span style="color:#16a34a;font-weight:bold">✓</span>':(isGR&&!m.read?' <span style="color:#f59e0b">●</span>':' ');
+      // 查找这条消息是否引用了前一条
+      var isReply=false,replyContent='';
+      if(m.reply_to>0){isReply=true;}
+      // 从allMessages找原始消息的引用
+      if(m.reply_to>0&&allMessages.length){
+        var orig=allMessages.find(function(x){return x.id===m.reply_to});
+        if(orig){replyContent=esc(orig.content.substring(0,60))}
+      }
+      el.insertAdjacentHTML('beforeend',
+        '<div class="msg '+(isGR?'guorui':'pablo')+'">'+
+          (isReply?'<div class="quote-bar">↩ '+replyContent+'…</div>':'')+
+          '<div class="sender">'+(isGR?'<span style="color:#e53e3e">●</span> 郭锐':'🔵 Pablo')+'</div>'+
+          '<div>'+content+'</div>'+
+          '<div class="time">'+fmtTime(m.created_at)+readMark+'</div>'+
+        '</div>'+
+        '<div class="qlink '+(isGR?'qlink-right':'qlink-left')+'" onclick="doQuote('+m.id+')">↩引用</div>'
+      )
+    }
+  }
+  el.scrollTop=el.scrollHeight;
+  renderDateSidebar();
+  // 更新未读数
+  var unread=allMessages.filter(function(m){return m.sender==='guorui'&&!m.read}).length;
+  document.getElementById('totalBadge').textContent=unread;
+  if(unread>0&&document.hidden)document.title='('+unread+') Memo';
+  else document.title='Memo';
+}
+
+function pollMessages(force){
+  fetch('/api/messages?after='+lastId).then(function(r){return r.json()}).then(function(msgs){
+    if(!msgs)return;
+    var changed=false;
+    for(var i=0;i<msgs.length;i++){
+      if(msgs[i].id>lastId){allMessages.push(msgs[i]);lastId=msgs[i].id;changed=true}
+    }
+    if(changed||force){renderMessages();loadTasks()}
+  });
+}
+
+function loadMessages(){
+  fetch('/api/messages?after=0').then(function(r){return r.json()}).then(function(data){
+    allMessages=data||[];
+    if(allMessages.length)lastId=allMessages[allMessages.length-1].id;
+    renderMessages();
+    setTimeout(function(){document.getElementById('messageArea').scrollTop=999999},100);
+  });
+}
+
+// ===== TASKS =====
+function renderTasks(){
+  var el=document.getElementById('taskList');
+  var list=(taskFilter==='archived'?tasksArchived:tasks);
+  list=list.filter(function(t){
+    if(taskFilter==='pending')return t.status==='pending';
+    if(taskFilter==='scored')return t.status==='scored';
+    if(taskFilter==='archived')return t.archived==1;
+    return !t.archived;
+  });
+  if(!list.length){el.innerHTML='<div class="empty">暂无任务</div>';return}
+  el.innerHTML='';
+  for(var i=0;i<list.length;i++){
+    var t=list[i];
+    var scoreStr=t.score!==null&&t.score!==undefined?'<span class="t-score">'+t.score+'分</span>':'';
+    var statusClass=t.status==='scored'?'scored':t.status==='completed'?'completed':'pending';
+    var statusText=t.status==='scored'?'已评':t.status==='completed'?'完成':'待办';
+    var feedback=t.feedback?'<div class="t-feedback">'+esc(t.feedback)+'</div>':'';
+    var feedbackInput=t.status==='scored'?'':'';
+    el.insertAdjacentHTML('beforeend',
+      '<div class="task-card" onclick="openScore('+t.id+')">'+
+        '<div class="t-title"><span class="tid">#'+t.id+'</span> '+esc(t.title.substring(0,100))+'</div>'+
+        '<div class="t-info"><span class="t-status '+statusClass+'">'+statusText+'</span> '+scoreStr+'</div>'+
+        feedback+
+        '<div class="t-actions">'+
+          (t.status!=='scored'?'<button class="done-btn" onclick="event.stopPropagation();scoreTask('+t.id+')">🎯 打分</button>':'')+
+          '<button class="delete-btn" onclick="event.stopPropagation();deleteTask('+t.id+')">🗑 删除</button>'+
+          (t.archived==0?'<button class="archive-btn" onclick="event.stopPropagation();archiveTask('+t.id+')">📦 归档</button>':'')+
+        '</div>'+
+      '</div>'
+    );
+  }
+}
+
+function loadTasks(){
+  fetch('/api/tasks?archived=0').then(function(r){return r.json()}).then(function(data){
+    tasks=data.tasks||[];
+    totalScore=data.total_score||0;
+    document.getElementById('taskTotalScore').textContent=totalScore;
+    document.getElementById('scoreBadge').textContent=totalScore;
+    return fetch('/api/tasks?archived=1').then(function(r){return r.json()});
+  }).then(function(data){
+    tasksArchived=data.tasks||[];
+    renderTasks();
+  });
+}
+
+function setFilter(f){
+  taskFilter=f;
+  document.querySelectorAll('.filter button').forEach(function(el){el.classList.toggle('active',el.dataset.filter===f)});
+  renderTasks();
+}
+
+function scoreTask(id){
+  openScore(id);
+}
+
+function archiveTask(id){
+  fetch('/api/tasks/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({archived:1})})
+    .then(function(){loadTasks()});
+}
+function deleteTask(id){
+  if(!confirm('删除任务 #'+id+'？'))return;
+  fetch('/api/tasks/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({archived:1,feedback:'已删除'})})
+    .then(function(){loadTasks()});
+}
+
+function openScore(id){
+  scoreTaskId=id;
+  document.getElementById('scoreInput').value='0';
+  document.getElementById('reasonInput').value='';
+  document.getElementById('scorePanel').classList.add('show');
+}
+
+function closeScore(){
+  scoreTaskId=null;
+  document.getElementById('scorePanel').classList.remove('show');
+}
+
+function submitScore(){
+  if(!scoreTaskId)return;
+  var score=parseFloat(document.getElementById('scoreInput').value)||0;
+  var reason=document.getElementById('reasonInput').value.trim();
+  fetch('/api/tasks/'+scoreTaskId+'/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({score:score,reason:reason})})
+    .then(function(){closeScore();loadTasks()});
+}
+
+function scrollTask(id){
+  // 切换到任务tab，滚动到该任务
+  setFilter('all');togglePanel();
+  setTimeout(function(){
+    var cards=document.querySelectorAll('.task-card');
+    for(var i=0;i<cards.length;i++){
+      if(cards[i].querySelector('.tid')&&cards[i].querySelector('.tid').textContent==='#'+id){
+        cards[i].scrollIntoView({behavior:'smooth',block:'center'});
+        cards[i].style.background='#eef0ff';
+        setTimeout(function(){cards[i].style.background=''},2000);
+        break;
+      }
+    }
+  },300);
+}
+
+// ===== PANEL TOGGLE =====
+function togglePanel(){
+  var chat=document.getElementById('chatPanel');
+  var task=document.getElementById('taskPanel');
+  var btn=document.getElementById('mobileToggle');
+  if(window.innerWidth<=768){
+    chat.classList.toggle('hide-mobile');
+    task.classList.toggle('show-mobile');
+    btn.textContent=task.classList.contains('show-mobile')?'💬 对话':'📋 任务';
+  }else{
+    task.style.display=(task.style.display==='none'?'flex':'none');
+    btn.textContent=task.style.display==='none'?'📋 任务':'💬 对话';
+  }
+}
+
+
+// ===== KEYBOARD =====
+document.getElementById('inputMsg').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(this._enterCount){sendMsg();this._enterCount=0}else{this._enterCount=1;var self=this;setTimeout(function(){self._enterCount=0},800)}}
+});
+
+// ===== VISIBILITY =====
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden){markRead();document.title='Memo'}
+});
+function markRead(){
+  fetch('/api/mark-read',{method:'POST'});
+}
+
+// ===== POLL =====
+setInterval(pollMessages,3000);
+
+// ===== START =====
+loadMessages();
+loadTasks();
+setTimeout(markRead,1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+*.db
+*.db.bak
+*.db.backup.*
+__pycache__/
+*.pyc
+.env
+config.json
+server.log
+.pablo_chat*
